@@ -4,11 +4,11 @@
   "description": "Puente de WhatsApp a cPanel",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "postinstall": "npx puppeteer browsers install chrome"
+    "start": "node index.js"
   },
   "dependencies": {
     "node-fetch": "^2.6.7",
+    "puppeteer": "^21.0.0",
     "qrcode-terminal": "^0.12.0",
     "whatsapp-web.js": "^1.23.0"
   }
