@@ -1,17 +1,15 @@
 {
   "name": "whatsapp-puente-solutions",
   "version": "1.0.0",
-  "description": "Puente propio de WhatsApp para cPanel",
+  "description": "Puente de WhatsApp a cPanel",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "postinstall": "npx puppeteer browsers install chrome"
   },
   "dependencies": {
-    "whatsapp-web.js": "^1.23.0",
+    "node-fetch": "^2.6.7",
     "qrcode-terminal": "^0.12.0",
-    "node-fetch": "^2.6.7"
-  },
-  "engines": {
-    "node": "18.x"
+    "whatsapp-web.js": "^1.23.0"
   }
 }
