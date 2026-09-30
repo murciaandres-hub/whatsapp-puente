@@ -25,9 +25,32 @@ async function connectToWhatsApp() {
     
     const sock = makeWASocket({
         auth: state,
-        printQRInTerminal: true,
+        printQRInTerminal: false, // Lo desactivamos para que no salga descuadrado
         logger: pino({ level: 'fatal' })
     });
+
+    // Si no está pareado, mostramos el código en los logs de forma limpia o usamos QR alternativo
+    sock.ev.on('connection.update', (update) => {
+        const { connection, lastDisconnect, qr } = update;
+        if (qr) {
+            console.log('--- COPIA ESTE ENLACE PARA VER TU QR CLARO ---');
+            console.log(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qr)}`);
+        }
+        if (connection === 'close') {
+            const shouldReconnect = (lastDisconnect?.error instanceof Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
+            console.log('Conexión cerrada. Reconectando...', shouldReconnect);
+            if (shouldReconnect) {
+                connectToWhatsApp();
+            }
+        } else if (connection === 'open') {
+            console.log('¡El puente de WhatsApp esta conectado y listo!');
+        }
+    });
+
+    sock.ev.on('creds.update', saveCreds);
+
+    // ... (deje abajo el resto del código de mensajes igualito)
+}
 
     sock.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect, qr } = update;
