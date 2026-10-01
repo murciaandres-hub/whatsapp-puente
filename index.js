@@ -57,13 +57,19 @@ async function connectToWhatsApp() {
 
             if (!messageBody) continue;
 
-            console.log(`Mensaje recibido de ${sender}: ${messageBody}`);
+            // Limpieza inteligente para Baileys: si trae @s.whatsapp.net extraemos el número, si trae @lid lo manejamos
+            let numeroLimpio = sender;
+            if (sender.includes('@s.whatsapp.net')) {
+                numeroLimpio = sender.split('@')[0]; // Extrae solo los dígitos del celular
+            }
+
+            console.log(`Mensaje recibido de ${sender} (Limpio: ${numeroLimpio}): ${messageBody}`);
 
             const payload = {
-                sender: sender,
-                message: messageBody
+                sender: numeroLimpio, // Enviamos el número limpio a tu cPanel
+                message: messageBody,
+                sender_original: sender // Guardamos el original por seguridad para responder
             };
-
             try {
                 const response = await fetch(URL_CPANEL_WEBHOOK, {
                     method: 'POST',
