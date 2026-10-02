@@ -57,34 +57,34 @@ async function connectToWhatsApp() {
 
             if (!messageBody) continue;
 
-            // Resolución avanzada para cuentas con LID / Privacidad de Meta
+            // Extracción inteligente y resolución de LID
             let numeroLimpio = sender;
 
             if (sender.includes('@s.whatsapp.net')) {
                 numeroLimpio = sender.split('@')[0];
             } else if (sender.includes('@lid')) {
-                // Si el mensaje viene con @lid, intentamos buscar si el chat tiene mapeado el JID alternativo en el Store o en msg.key.participant/remoteJid
-                // O si el objeto de mensaje trae el número real en otra propiedad interna de Baileys
+                // Buscamos si hay un JID alternativo en las propiedades del mensaje
+                let jidReal = null;
+                
                 if (msg.key.participant && msg.key.participant.includes('@s.whatsapp.net')) {
-                    numeroLimpio = msg.key.participant.split('@')[0];
+                    jidReal = msg.key.participant;
+                } else if (msg.participant && msg.participant.includes('@s.whatsapp.net')) {
+                    jidReal = msg.participant;
+                }
+
+                if (jidReal) {
+                    numeroLimpio = jidReal.split('@')[0];
                 } else {
-                    // Si el remitente es estrictamente un LID, consultamos si Baileys lo tiene en su caché de contactos
-                    let cachedContact = sock.store?.contacts?.[sender];
-                    if (cachedContact && cachedContact.id && cachedContact.id.includes('@s.whatsapp.net')) {
-                        numeroLimpio = cachedContact.id.split('@')[0];
-                    } else {
-                        // Último recurso: si el teléfono vinculado tiene guardado el contacto, 
-                        // forzamos la extracción numérica si hay un patrón válido, o pasamos el LID señalizándolo limpio
-                        let extracted = sender.replace(/[^0-9]/g, '');
-                        numeroLimpio = extracted.length >= 10 ? extracted : sender.split('@')[0];
-                    }
+                    // Si el remitente es puro LID, intentamos limpiar los dígitos o dejar una traza limpia para el CRM
+                    let extracted = sender.replace(/[^0-9]/g, '');
+                    numeroLimpio = extracted.length >= 10 ? extracted : sender.split('@')[0];
                 }
             }
 
-            console.log(`Mensaje recibido de ${sender} (Número extraído: ${numeroLimpio}): ${messageBody}`);
+            console.log(`Mensaje recibido de ${sender} (Número resuelto: ${numeroLimpio}): ${messageBody}`);
 
             const payload = {
-                sender: numeroLimpio, // Enviamos el número real detectado al cPanel
+                sender: numeroLimpio, 
                 message: messageBody,
                 sender_original: sender
             };
