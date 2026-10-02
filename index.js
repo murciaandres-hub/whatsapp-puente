@@ -62,12 +62,19 @@ async function connectToWhatsApp() {
             if (sender.includes('@s.whatsapp.net')) {
                 numeroLimpio = sender.split('@')[0];
             } else if (sender.includes('@lid')) {
-                // Si viene con formato LID, extraemos los dígitos numéricos
                 let extracted = sender.replace(/[^0-9]/g, '');
                 if (extracted.length >= 7) {
                     numeroLimpio = extracted;
                 }
             }
+
+            console.log(`Mensaje recibido de ${sender} (Procesado: ${numeroLimpio}): ${messageBody}`);
+
+            const payload = {
+                sender: numeroLimpio,
+                message: messageBody,
+                sender_original: sender
+            };
 
             console.log(`Mensaje recibido de ${sender} (Procesado: ${numeroLimpio}): ${messageBody}`);
 
