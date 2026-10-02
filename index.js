@@ -57,23 +57,36 @@ async function connectToWhatsApp() {
 
             if (!messageBody) continue;
 
-            // Limpieza inteligente para extraer solo los números limpios
+            // Resolución avanzada para cuentas con LID / Privacidad de Meta
             let numeroLimpio = sender;
+
             if (sender.includes('@s.whatsapp.net')) {
                 numeroLimpio = sender.split('@')[0];
             } else if (sender.includes('@lid')) {
-                let extracted = sender.replace(/[^0-9]/g, '');
-                if (extracted.length >= 7) {
-                    numeroLimpio = extracted;
+                // Si el mensaje viene con @lid, intentamos buscar si el chat tiene mapeado el JID alternativo en el Store o en msg.key.participant/remoteJid
+                // O si el objeto de mensaje trae el número real en otra propiedad interna de Baileys
+                if (msg.key.participant && msg.key.participant.includes('@s.whatsapp.net')) {
+                    numeroLimpio = msg.key.participant.split('@')[0];
+                } else {
+                    // Si el remitente es estrictamente un LID, consultamos si Baileys lo tiene en su caché de contactos
+                    let cachedContact = sock.store?.contacts?.[sender];
+                    if (cachedContact && cachedContact.id && cachedContact.id.includes('@s.whatsapp.net')) {
+                        numeroLimpio = cachedContact.id.split('@')[0];
+                    } else {
+                        // Último recurso: si el teléfono vinculado tiene guardado el contacto, 
+                        // forzamos la extracción numérica si hay un patrón válido, o pasamos el LID señalizándolo limpio
+                        let extracted = sender.replace(/[^0-9]/g, '');
+                        numeroLimpio = extracted.length >= 10 ? extracted : sender.split('@')[0];
+                    }
                 }
             }
 
-            console.log(`Mensaje recibido de ${sender} (Limpio: ${numeroLimpio}): ${messageBody}`);
+            console.log(`Mensaje recibido de ${sender} (Número extraído: ${numeroLimpio}): ${messageBody}`);
 
             const payload = {
-                sender: numeroLimpio, // Enviamos el número limpio a tu cPanel
+                sender: numeroLimpio, // Enviamos el número real detectado al cPanel
                 message: messageBody,
-                sender_original: sender // Guardamos el original por seguridad para responder
+                sender_original: sender
             };
 
             try {
