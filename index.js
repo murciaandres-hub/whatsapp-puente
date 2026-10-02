@@ -58,24 +58,39 @@ async function connectToWhatsApp() {
             if (!messageBody) continue;
 
             // Extracción inteligente y resolución de LID
+            // Extracción inteligente y resolución de LID a número real vía Baileys
             let numeroLimpio = sender;
+            let jidReal = null;
 
             if (sender.includes('@s.whatsapp.net')) {
                 numeroLimpio = sender.split('@')[0];
             } else if (sender.includes('@lid')) {
-                // Buscamos si hay un JID alternativo en las propiedades del mensaje
-                let jidReal = null;
-                
-                if (msg.key.participant && msg.key.participant.includes('@s.whatsapp.net')) {
-                    jidReal = msg.key.participant;
-                } else if (msg.participant && msg.participant.includes('@s.whatsapp.net')) {
-                    jidReal = msg.participant;
+                // Intentar consultar el repositorio interno de Baileys para traducir el LID a número real
+                try {
+                    if (sock.signalRepository && sock.signalRepository.lidMapping) {
+                        const mappedPn = await sock.signalRepository.lidMapping.getPNForLID(sender);
+                        if (mappedPn) {
+                            jidReal = mappedPn;
+                        }
+                    }
+                } catch (e) {
+                    // Si falla la consulta interna, procedemos al respaldo
+                }
+
+                // Si no devolvió por el mapeo, revisamos si viene en los metadatos del mensaje
+                if (!jidReal) {
+                    if (msg.key.participant && msg.key.participant.includes('@s.whatsapp.net')) {
+                        jidReal = msg.key.participant;
+                    } else if (msg.participant && msg.participant.includes('@s.whatsapp.net')) {
+                        jidReal = msg.participant;
+                    }
                 }
 
                 if (jidReal) {
                     numeroLimpio = jidReal.split('@')[0];
                 } else {
-                    // Si el remitente es puro LID, intentamos limpiar los dígitos o dejar una traza limpia para el CRM
+                    // Si WhatsApp mantiene estrictamente oculto el número y solo da el LID, 
+                    // limpiamos el formato para evitar que colapse el CRM
                     let extracted = sender.replace(/[^0-9]/g, '');
                     numeroLimpio = extracted.length >= 10 ? extracted : sender.split('@')[0];
                 }
