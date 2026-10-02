@@ -68,21 +68,6 @@ async function connectToWhatsApp() {
                 }
             }
 
-            console.log(`Mensaje recibido de ${sender} (Procesado: ${numeroLimpio}): ${messageBody}`);
-
-            const payload = {
-                sender: numeroLimpio,
-                message: messageBody,
-                sender_original: sender
-            };
-
-            console.log(`Mensaje recibido de ${sender} (Procesado: ${numeroLimpio}): ${messageBody}`);
-
-            const payload = {
-                sender: numeroLimpio,
-                message: messageBody,
-                sender_original: sender
-            };
             console.log(`Mensaje recibido de ${sender} (Limpio: ${numeroLimpio}): ${messageBody}`);
 
             const payload = {
@@ -90,6 +75,7 @@ async function connectToWhatsApp() {
                 message: messageBody,
                 sender_original: sender // Guardamos el original por seguridad para responder
             };
+
             try {
                 const response = await fetch(URL_CPANEL_WEBHOOK, {
                     method: 'POST',
