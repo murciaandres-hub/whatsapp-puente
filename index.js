@@ -57,14 +57,25 @@ async function connectToWhatsApp() {
 
             if (!messageBody) continue;
 
-            // Limpieza robusta para Baileys: extrae todos los números del remitente sin importar si es @s.whatsapp.net o @lid
-            let numeroLimpio = sender.replace(/[^0-9]/g, ''); // Saca solo los dígitos numéricos
-            
-            // Si por alguna razón los dígitos son muy largos o vacíos, respaldamos el sender original
-            if (!numeroLimpio || numeroLimpio.length < 7) {
-                numeroLimpio = sender;
+            // Limpieza inteligente para extraer solo los números limpios
+            let numeroLimpio = sender;
+            if (sender.includes('@s.whatsapp.net')) {
+                numeroLimpio = sender.split('@')[0];
+            } else if (sender.includes('@lid')) {
+                // Si viene con formato LID, extraemos los dígitos numéricos
+                let extracted = sender.replace(/[^0-9]/g, '');
+                if (extracted.length >= 7) {
+                    numeroLimpio = extracted;
+                }
             }
 
+            console.log(`Mensaje recibido de ${sender} (Procesado: ${numeroLimpio}): ${messageBody}`);
+
+            const payload = {
+                sender: numeroLimpio,
+                message: messageBody,
+                sender_original: sender
+            };
             console.log(`Mensaje recibido de ${sender} (Limpio: ${numeroLimpio}): ${messageBody}`);
 
             const payload = {
