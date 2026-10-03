@@ -58,21 +58,16 @@ async function connectToWhatsApp() {
             if (!messageBody) continue;
 
             // Extracción inteligente y resolución de LID
-            // Extracción inteligente y resolución de LID a número real vía Baileys
             let numeroLimpio = sender;
 
-            // Si el remitente es un LID o un formato interno de WhatsApp
-            if (sender.includes('@lid') || !sender.includes('@s.whatsapp.net')) {
-                // Buscamos si el número real viene en los datos del participante o en la llave
+            if (sender.includes('@lid')) {
                 let jidReal = msg.key.participant || msg.participant || null;
                 
                 if (jidReal && jidReal.includes('@s.whatsapp.net')) {
                     numeroLimpio = jidReal.split('@')[0];
                 } else {
-                    // Si no hay JID tradicional, revisamos si el objeto trae información de contacto o pushName útil, 
-                    // o forzamos a buscar un número válido de celular colombiano/internacional si viene en otro campo.
-                    // Si de plano es un LID puro sin rastro del teléfono en el mensaje, usamos un respaldo limpio:
-                    numeroLimpio = "NUMERO_NO_DISPONIBLE"; // O el valor que prefieras para identificarlo
+                    let soloDigitos = sender.replace(/[^0-9]/g, '');
+                    numeroLimpio = soloDigitos.length >= 10 ? soloDigitos : "LID_" + soloDigitos;
                 }
             } else if (sender.includes('@s.whatsapp.net')) {
                 numeroLimpio = sender.split('@')[0];
