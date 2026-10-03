@@ -1,4 +1,4 @@
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, makeInMemoryStore } = require('@whiskeysockets/baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 const { Boom } = require('@hapi/boom');
 const fetch = require('node-fetch');
 const express = require('express');
@@ -18,8 +18,8 @@ app.listen(PORT, () => {
 
 const URL_CPANEL_WEBHOOK = 'https://solutions360.click/crmsolutions/whatsapp/procesarwha.php';
 
-// Inicializar el Store en memoria respaldado por la comunidad para retener la relación de los LIDs
-const store = makeInMemoryStore({ logger: pino({ level: 'silent' }) });
+// Memoria caché local segura para relacionar LIDs con números reales
+const contactoCache = {};
 
 async function connectToWhatsApp() {
     const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
@@ -29,9 +29,6 @@ async function connectToWhatsApp() {
         printQRInTerminal: false,
         logger: pino({ level: 'fatal' })
     });
-
-    // Vincular el store al socket de Baileys
-    store.bind(sock.ev);
 
     sock.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect, qr } = update;
@@ -65,29 +62,39 @@ async function connectToWhatsApp() {
 
             let numeroLimpio = sender;
 
-            // Extracción robusta utilizando el Store y mapeo de LIDs
+            // Extracción segura usando caché local y metadatos
             if (sender.includes('@lid')) {
-                const contact = store.contacts[sender];
-                if (contact && contact.id && contact.id.includes('@s.whatsapp.net')) {
-                    numeroLimpio = contact.id.split('@')[0];
+                // Si ya lo tenemos guardado en memoria caché, lo usamos
+                if (contactoCache[sender]) {
+                    numeroLimpio = contactoCache[sender];
                 } else {
-                    try {
-                        if (sock.signalRepository?.lidMapping) {
-                            const mappedPn = await sock.signalRepository.lidMapping.getPNForLID(sender);
-                            if (mappedPn) {
-                                numeroLimpio = mappedPn.split('@')[0];
+                    let jidReal = msg.key.participant || msg.participant || null;
+                    
+                    if (jidReal && jidReal.includes('@s.whatsapp.net')) {
+                        numeroLimpio = jidReal.split('@')[0];
+                        contactoCache[sender] = numeroLimpio; // Guardamos en caché
+                    } else {
+                        try {
+                            if (sock.signalRepository?.lidMapping) {
+                                const mappedPn = await sock.signalRepository.lidMapping.getPNForLID(sender);
+                                if (mappedPn) {
+                                    numeroLimpio = mappedPn.split('@')[0];
+                                    contactoCache[sender] = numeroLimpio;
+                                }
                             }
+                        } catch (e) {
+                            // Ignorar error si no hay mapeo en frío
                         }
-                    } catch (e) {
-                        // Ignorar si la sesión está en frío
-                    }
 
-                    if (numeroLimpio.includes('@lid')) {
-                        numeroLimpio = "LID_" + sender.replace(/[^0-9]/g, '');
+                        // Si sigue siendo LID puro sin rastro, asignamos etiqueta limpia para el cPanel
+                        if (numeroLimpio.includes('@lid')) {
+                            numeroLimpio = "LID_" + sender.replace(/[^0-9]/g, '');
+                        }
                     }
                 }
             } else if (sender.includes('@s.whatsapp.net')) {
                 numeroLimpio = sender.split('@')[0];
+                contactoCache[sender] = numeroLimpio;
             }
 
             console.log(`Mensaje recibido de ${sender} (Número resuelto: ${numeroLimpio}): ${messageBody}`);
