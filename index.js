@@ -43,7 +43,15 @@ async function connectToWhatsApp() {
             console.log('¡El puente de WhatsApp esta conectado y listo!');
         }
     });
+for (const msg of messages) {
+            if (!msg.message || msg.key.fromMe) continue;
 
+            // --- PONGA ESTO AQUÍ ---
+            console.log("MENSAJE CRUDO DE WHATSAPP:", JSON.stringify(msg, null, 2));
+            // -----------------------
+
+            const sender = msg.key.remoteJid;
+    
     sock.ev.on('creds.update', saveCreds);
 
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
