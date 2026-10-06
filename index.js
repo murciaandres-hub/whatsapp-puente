@@ -114,15 +114,23 @@ async function connectToWhatsApp() {
 
                 const data = await response.json();
                 
-                if (data && data.reply) {
-                    await sock.sendMessage(sender, { text: data.reply });
-                    console.log(`Respuesta enviada: ${data.reply}`);
-                }
-            } catch (error) {
-                console.error('Error al conectar con el cPanel:', error);
+        if (data && data.reply) {
+            // Verificamos si el PHP mandó una imagen adjunta de forma segura
+            if (data.imagenUrl && typeof data.imagenUrl === 'string' && data.imagenUrl.trim() !== '') {
+                await sock.sendMessage(sender, { 
+                    image: { url: data.imagenUrl.trim() }, 
+                    caption: data.reply 
+                });
+                console.log(`Respuesta con imagen enviada: ${data.imagenUrl}`);
+            } else {
+                // Si no hay imagen, envía solo el texto formateado
+                await sock.sendMessage(sender, { text: data.reply });
+                console.log(`Respuesta de texto enviada: ${data.reply}`);
             }
         }
-    });
+    } catch (error) {
+        console.error('Error al conectar con el cPanel:', error);
+    }
 }
 
 connectToWhatsApp();
