@@ -112,20 +112,20 @@ async function connectToWhatsApp() {
                     headers: { 'Content-Type': 'application/json' }
                 });
 
-                const data = await response.json();
+               const data = await response.json();
 
-if (data && data.reply) {
-    // Validación súper segura: si data.imagenUrl existe y no está vacía
-    if (data.imagenUrl && String(data.imagenUrl).trim() !== '') {
-        await sock.sendMessage(sender, { 
-            image: { url: data.imagenUrl }, 
-            caption: data.reply 
-        });
-    } else {
-        // Si no hay imagen, envía solo el texto con formato
-        await sock.sendMessage(sender, { text: data.reply });
-    }
-}
+        if (data && data.reply) {
+            // Verificamos de forma segura si la URL de la imagen existe y no está vacía
+            if (data.imagenUrl && typeof data.imagenUrl === 'string' && data.imagenUrl.trim() !== '') {
+                await sock.sendMessage(sender, { 
+                    image: { url: data.imagenUrl.trim() }, 
+                    caption: data.reply 
+                });
+            } else {
+                // Si no hay imagen, envía solo el texto formateado
+                await sock.sendMessage(sender, { text: data.reply });
+            }
+        }
     });
 }
 
