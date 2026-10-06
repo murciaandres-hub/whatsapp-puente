@@ -112,18 +112,14 @@ async function connectToWhatsApp() {
                     headers: { 'Content-Type': 'application/json' }
                 });
 
-               const data = await response.json();
-
-        if (data && data.reply) {
-            // Verificamos de forma segura si la URL de la imagen existe y no está vacía
-            if (data.imagenUrl && typeof data.imagenUrl === 'string' && data.imagenUrl.trim() !== '') {
-                await sock.sendMessage(sender, { 
-                    image: { url: data.imagenUrl.trim() }, 
-                    caption: data.reply 
-                });
-            } else {
-                // Si no hay imagen, envía solo el texto formateado
-                await sock.sendMessage(sender, { text: data.reply });
+                const data = await response.json();
+                
+                if (data && data.reply) {
+                    await sock.sendMessage(sender, { text: data.reply });
+                    console.log(`Respuesta enviada: ${data.reply}`);
+                }
+            } catch (error) {
+                console.error('Error al conectar con el cPanel:', error);
             }
         }
     });
