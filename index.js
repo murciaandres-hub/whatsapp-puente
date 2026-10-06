@@ -1,5 +1,6 @@
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 const { Boom } = require('@hapi/boom');
+const fetch = require('node-fetch');
 const express = require('express');
 const pino = require('pino');
 
@@ -83,11 +84,11 @@ async function connectToWhatsApp() {
                         } catch (e) {
                             // Ignorar error si no hay mapeo en frío
                         }
+
+                        if (numeroLimpio.includes('@lid')) {
+                            numeroLimpio = "LID_" + sender.replace(/[^0-9]/g, '');
+                        }
                     }
-                }
-                
-                if (numeroLimpio.includes('@lid')) {
-                    numeroLimpio = "LID_" + sender.replace(/[^0-9]/g, '');
                 }
             } else if (sender.includes('@s.whatsapp.net')) {
                 numeroLimpio = sender.split('@')[0];
