@@ -21,6 +21,10 @@ const URL_CPANEL_WEBHOOK = 'https://solutions360.click/crmsolutions/whatsapp/pro
 // Memoria caché local segura para relacionar LIDs con números reales
 const contactoCache = {};
 
+// Memoria para llevar el control de chats pausados por intervención humana
+const chatsPausados = {};
+const TIEMPO_PAUSA = 10 * 60 * 1000; // 10 minutos de pausa cuando tú escribes
+
 async function connectToWhatsApp() {
     const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
     
@@ -53,9 +57,26 @@ async function connectToWhatsApp() {
         if (type !== 'notify') return;
         
         for (const msg of messages) {
-            if (!msg.message || msg.key.fromMe) continue;
+            if (!msg.message) continue;
 
             const sender = msg.key.remoteJid;
+
+            // SI TÚ ESCRIBES (fromMe): Pausamos el bot para este chat y no procesamos nada
+            if (msg.key.fromMe) {
+                chatsPausados[sender] = Date.now() + TIEMPO_PAUSA;
+                console.log(`[HUMANO INTERVINO] Pausando el bot para ${sender} durante 10 minutos.`);
+                continue;
+            }
+
+            // Validar si el chat está actualmente pausado por intervención humana reciente
+            if (chatsPausados[sender] && Date.now() < chatsPausados[sender]) {
+                console.log(`[BOT EN PAUSA] Mensaje ignorado para ${sender} porque hay un humano atendiendo.`);
+                continue;
+            } else if (chatsPausados[sender]) {
+                // Si ya pasó el tiempo, borramos la pausa
+                delete chatsPausados[sender];
+            }
+
             const messageBody = msg.message.conversation || msg.message.extendedTextMessage?.text;
 
             if (!messageBody) continue;
