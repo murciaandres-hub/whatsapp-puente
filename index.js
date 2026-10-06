@@ -113,15 +113,19 @@ async function connectToWhatsApp() {
                 });
 
                 const data = await response.json();
-                
-                if (data && data.reply) {
-                    await sock.sendMessage(sender, { text: data.reply });
-                    console.log(`Respuesta enviada: ${data.reply}`);
-                }
-            } catch (error) {
-                console.error('Error al conectar con el cPanel:', error);
-            }
-        }
+
+if (data && data.reply) {
+    // Si el JSON trae una imagen adjunta, la enviamos con Baileys como imagen
+    if (data.imagenUrl && data.imagenUrl.trim() !== '') {
+        await sock.sendMessage(sender, { 
+            image: { url: data.imagenUrl }, 
+            caption: data.reply 
+        });
+    } else {
+        // Si no hay imagen, envía solo el texto con formato
+        await sock.sendMessage(sender, { text: data.reply });
+    }
+}
     });
 }
 
