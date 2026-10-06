@@ -115,8 +115,8 @@ async function connectToWhatsApp() {
                 const data = await response.json();
 
 if (data && data.reply) {
-    // Si el JSON trae una imagen adjunta, la enviamos con Baileys como imagen
-    if (data.imagenUrl && data.imagenUrl.trim() !== '') {
+    // Validación súper segura: si data.imagenUrl existe y no está vacía
+    if (data.imagenUrl && String(data.imagenUrl).trim() !== '') {
         await sock.sendMessage(sender, { 
             image: { url: data.imagenUrl }, 
             caption: data.reply 
