@@ -1,6 +1,5 @@
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 const { Boom } = require('@hapi/boom');
-const fetch = require('node-fetch');
 const express = require('express');
 const pino = require('pino');
 
@@ -61,7 +60,7 @@ async function connectToWhatsApp() {
             if (msg.key.fromMe) {
                 let numeroDestino = sender.replace('@s.whatsapp.net', '').replace('@g.us', '');
                 try {
-                    // Avisamos a tu PHP en cPanel para que pause el bot de este cliente de inmediato
+                    // Usamos fetch nativo para avisar al cPanel que pause el bot
                     await fetch(URL_CPANEL_WEBHOOK, {
                         method: 'POST',
                         body: JSON.stringify({
@@ -73,16 +72,15 @@ async function connectToWhatsApp() {
                 } catch (e) {
                     console.log("Error al pausar bot por mensaje propio:", e);
                 }
-                continue; // Saltamos para que el bot no intente responder a tu propio mensaje
+                continue; 
             }
 
-            // --- A PARTIR DE AQUÍ SIGUE TU CÓDIGO NORMAL PARA LOS MENSAJES DEL CLIENTE ---
+            // --- MENSAJES DEL CLIENTE ---
             const messageBody = msg.message.conversation || msg.message.extendedTextMessage?.text;
             if (!messageBody) continue;
 
             let numeroLimpio = sender;
 
-            // Extracción segura usando caché local y metadatos
             if (sender.includes('@lid')) {
                 if (contactoCache[sender]) {
                     numeroLimpio = contactoCache[sender];
@@ -101,9 +99,7 @@ async function connectToWhatsApp() {
                                     contactoCache[sender] = numeroLimpio;
                                 }
                             }
-                        } catch (e) {
-                            // Ignorar error si no hay mapeo en frío
-                        }
+                        } catch (e) {}
                     }
                 }
                 
