@@ -53,11 +53,31 @@ async function connectToWhatsApp() {
         if (type !== 'notify') return;
         
         for (const msg of messages) {
-            if (!msg.message || msg.key.fromMe) continue;
+            if (!msg.message) continue;
 
             const sender = msg.key.remoteJid;
-            const messageBody = msg.message.conversation || msg.message.extendedTextMessage?.text;
 
+            // SI EL MENSAJE FUE ENVIADO POR TI (EL HUMANO)
+            if (msg.key.fromMe) {
+                let numeroDestino = sender.replace('@s.whatsapp.net', '').replace('@g.us', '');
+                try {
+                    // Avisamos a tu PHP en cPanel para que pause el bot de este cliente de inmediato
+                    await fetch(URL_CPANEL_WEBHOOK, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            accion: 'pausar_bot',
+                            telefono: numeroDestino
+                        }),
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                } catch (e) {
+                    console.log("Error al pausar bot por mensaje propio:", e);
+                }
+                continue; // Saltamos para que el bot no intente responder a tu propio mensaje
+            }
+
+            // --- A PARTIR DE AQUÍ SIGUE TU CÓDIGO NORMAL PARA LOS MENSAJES DEL CLIENTE ---
+            const messageBody = msg.message.conversation || msg.message.extendedTextMessage?.text;
             if (!messageBody) continue;
 
             let numeroLimpio = sender;
@@ -84,11 +104,11 @@ async function connectToWhatsApp() {
                         } catch (e) {
                             // Ignorar error si no hay mapeo en frío
                         }
-
-                        if (numeroLimpio.includes('@lid')) {
-                            numeroLimpio = "LID_" + sender.replace(/[^0-9]/g, '');
-                        }
                     }
+                }
+                
+                if (numeroLimpio.includes('@lid')) {
+                    numeroLimpio = "LID_" + sender.replace(/[^0-9]/g, '');
                 }
             } else if (sender.includes('@s.whatsapp.net')) {
                 numeroLimpio = sender.split('@')[0];
