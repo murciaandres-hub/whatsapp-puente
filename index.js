@@ -64,7 +64,6 @@ async function connectToWhatsApp() {
 
             // Extracción segura usando caché local y metadatos
             if (sender.includes('@lid')) {
-                // Si ya lo tenemos guardado en memoria caché, lo usamos
                 if (contactoCache[sender]) {
                     numeroLimpio = contactoCache[sender];
                 } else {
@@ -72,7 +71,7 @@ async function connectToWhatsApp() {
                     
                     if (jidReal && jidReal.includes('@s.whatsapp.net')) {
                         numeroLimpio = jidReal.split('@')[0];
-                        contactoCache[sender] = numeroLimpio; // Guardamos en caché
+                        contactoCache[sender] = numeroLimpio;
                     } else {
                         try {
                             if (sock.signalRepository?.lidMapping) {
@@ -86,7 +85,6 @@ async function connectToWhatsApp() {
                             // Ignorar error si no hay mapeo en frío
                         }
 
-                        // Si sigue siendo LID puro sin rastro, asignamos etiqueta limpia para el cPanel
                         if (numeroLimpio.includes('@lid')) {
                             numeroLimpio = "LID_" + sender.replace(/[^0-9]/g, '');
                         }
@@ -114,23 +112,23 @@ async function connectToWhatsApp() {
 
                 const data = await response.json();
                 
-        if (data && data.reply) {
-            // Verificamos si el PHP mandó una imagen adjunta de forma segura
-            if (data.imagenUrl && typeof data.imagenUrl === 'string' && data.imagenUrl.trim() !== '') {
-                await sock.sendMessage(sender, { 
-                    image: { url: data.imagenUrl.trim() }, 
-                    caption: data.reply 
-                });
-                console.log(`Respuesta con imagen enviada: ${data.imagenUrl}`);
-            } else {
-                // Si no hay imagen, envía solo el texto formateado
-                await sock.sendMessage(sender, { text: data.reply });
-                console.log(`Respuesta de texto enviada: ${data.reply}`);
+                if (data && data.reply) {
+                    if (data.imagenUrl && typeof data.imagenUrl === 'string' && data.imagenUrl.trim() !== '') {
+                        await sock.sendMessage(sender, { 
+                            image: { url: data.imagenUrl.trim() }, 
+                            caption: data.reply 
+                        });
+                        console.log(`Respuesta con imagen enviada: ${data.imagenUrl}`);
+                    } else {
+                        await sock.sendMessage(sender, { text: data.reply });
+                        console.log(`Respuesta de texto enviada: ${data.reply}`);
+                    }
+                }
+            } catch (error) {
+                console.error('Error al conectar con el cPanel:', error);
             }
         }
-    } catch (error) {
-        console.error('Error al conectar con el cPanel:', error);
-    }
+    });
 }
 
 connectToWhatsApp();
