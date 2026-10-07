@@ -134,12 +134,22 @@ async function connectToWhatsApp() {
                 
                 if (data && data.reply) {
     if (data.imagenUrl && typeof data.imagenUrl === 'string' && data.imagenUrl.trim() !== '') {
-        // Enviar la imagen adjunta con Baileys usando el 'sender' correcto
-        await sock.sendMessage(sender, { 
-            image: { url: data.imagenUrl.trim() }, 
-            caption: data.reply 
-        });
-        console.log(`Respuesta con imagen enviada: ${data.imagenUrl}`);
+        console.log("¡SÍ HAY IMAGEN DETECTADA! Descargando y enviando:", data.imagenUrl.trim());
+        
+        try {
+            // Descargar la imagen como buffer para evitar bloqueos de enlaces externos en WhatsApp
+            const imgResponse = await fetch(data.imagenUrl.trim());
+            const buffer = await imgResponse.buffer();
+
+            await sock.sendMessage(sender, { 
+                image: buffer, 
+                caption: data.reply 
+            });
+            console.log("¡Imagen enviada como buffer exitosamente!");
+        } catch (imgError) {
+            console.error("Error al descargar/enviar la imagen, enviando solo texto:", imgError);
+            await sock.sendMessage(sender, { text: data.reply + "\n\n(No se pudo cargar la imagen adjunta)" });
+        }
     } else {
         await sock.sendMessage(sender, { text: data.reply });
         console.log(`Respuesta de texto enviada: ${data.reply}`);
