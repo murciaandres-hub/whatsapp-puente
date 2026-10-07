@@ -133,17 +133,18 @@ async function connectToWhatsApp() {
                 const data = await response.json();
                 
                 if (data && data.reply) {
-                    if (data.imagenUrl && typeof data.imagenUrl === 'string' && data.imagenUrl.trim() !== '') {
-                        await sock.sendMessage(sender, { 
-                            image: { url: data.imagenUrl.trim() }, 
-                            caption: data.reply 
-                        });
-                        console.log(`Respuesta con imagen enviada: ${data.imagenUrl}`);
-                    } else {
-                        await sock.sendMessage(sender, { text: data.reply });
-                        console.log(`Respuesta de texto enviada: ${data.reply}`);
-                    }
-                }
+    if (data.imagenUrl && typeof data.imagenUrl === 'string' && data.imagenUrl.trim() !== '') {
+        // Enviar la imagen adjunta con Baileys usando el 'sender' correcto
+        await sock.sendMessage(sender, { 
+            image: { url: data.imagenUrl.trim() }, 
+            caption: data.reply 
+        });
+        console.log(`Respuesta con imagen enviada: ${data.imagenUrl}`);
+    } else {
+        await sock.sendMessage(sender, { text: data.reply });
+        console.log(`Respuesta de texto enviada: ${data.reply}`);
+    }
+}
             } catch (error) {
                 console.error('Error al conectar con el cPanel:', error);
             }
