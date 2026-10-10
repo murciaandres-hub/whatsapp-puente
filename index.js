@@ -132,29 +132,52 @@ async function connectToWhatsApp() {
 
                 const data = await response.json();
                 
-                if (data && data.reply) {
-    if (data.imagenUrl && typeof data.imagenUrl === 'string' && data.imagenUrl.trim() !== '') {
-        console.log("¡SÍ HAY IMAGEN DETECTADA! Descargando y enviando:", data.imagenUrl.trim());
-        
-        try {
-            // Descargar la imagen como buffer para evitar bloqueos de enlaces externos en WhatsApp
-            const imgResponse = await fetch(data.imagenUrl.trim());
-            const buffer = await imgResponse.buffer();
+               if (data && data.reply) {
+                    // 1. Si la regla trae botones interactivos configurados
+                    if (data.buttons && Array.isArray(data.buttons) && data.buttons.length > 0) {
+                        console.log("¡Botones detectados! Enviando mensaje interactivo con botones:", data.buttons);
+                        
+                        // Mapeamos los textos al formato que exige Baileys
+                        const buttonsList = data.buttons.map((btnText, index) => ({
+                            buttonId: `btn_${index}_${Date.now()}`,
+                            buttonText: { displayText: btnText },
+                            type: 1
+                        }));
 
-            await sock.sendMessage(sender, { 
-                image: buffer, 
-                caption: data.reply 
-            });
-            console.log("¡Imagen enviada como buffer exitosamente!");
-        } catch (imgError) {
-            console.error("Error al descargar/enviar la imagen, enviando solo texto:", imgError);
-            await sock.sendMessage(sender, { text: data.reply + "\n\n(No se pudo cargar la imagen adjunta)" });
-        }
-    } else {
-        await sock.sendMessage(sender, { text: data.reply });
-        console.log(`Respuesta de texto enviada: ${data.reply}`);
-    }
-}
+                        const buttonMessage = {
+                            text: data.reply,
+                            footer: "Solutions Clicks",
+                            buttons: buttonsList,
+                            headerType: 1
+                        };
+
+                        await sock.sendMessage(sender, buttonMessage);
+                        console.log("¡Mensaje con botones interactivos enviado con éxito!");
+                    } 
+                    // 2. Si trae imagen adjunta
+                    else if (data.imagenUrl && typeof data.imagenUrl === 'string' && data.imagenUrl.trim() !== '') {
+                        console.log("¡SÍ HAY IMAGEN DETECTADA! Descargando y enviando:", data.imagenUrl.trim());
+                        
+                        try {
+                            const imgResponse = await fetch(data.imagenUrl.trim());
+                            const buffer = await imgResponse.buffer();
+
+                            await sock.sendMessage(sender, { 
+                                image: buffer, 
+                                caption: data.reply 
+                            });
+                            console.log("¡Imagen enviada como buffer exitosamente!");
+                        } catch (imgError) {
+                            console.error("Error al descargar/enviar la imagen, enviando solo texto:", imgError);
+                            await sock.sendMessage(sender, { text: data.reply + "\n\n(No se pudo cargar la imagen adjunta)" });
+                        }
+                    } 
+                    // 3. Envío de texto normal
+                    else {
+                        await sock.sendMessage(sender, { text: data.reply });
+                        console.log(`Respuesta de texto enviada: ${data.reply}`);
+                    }
+                }
             } catch (error) {
                 console.error('Error al conectar con el cPanel:', error);
             }
