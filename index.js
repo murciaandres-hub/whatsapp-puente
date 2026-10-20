@@ -124,6 +124,8 @@ async function connectToWhatsApp() {
             };
 
             try {
+                await sock.presenceSubscribe(sender);
+                await sock.sendPresenceUpdate('composing', sender);
                 const response = await fetch(URL_CPANEL_WEBHOOK, {
                     method: 'POST',
                     body: JSON.stringify(payload),
