@@ -16,7 +16,7 @@ app.listen(PORT, () => {
     console.log(`Servidor web corriendo en el puerto ${PORT}`);
 });
 
-const URL_CPANEL_WEBHOOK = 'https://solutions360.click/crmsolutions/whatsapp/ia.php';
+const URL_CPANEL_WEBHOOK = process.env.URL_CPANEL_WEBHOOK || 'https://bdb.solutions360.click/crmsolutions/whatsapp/ia.php';
 // Memoria caché local segura para relacionar LIDs con números reales
 const contactoCache = {};
 
