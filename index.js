@@ -127,13 +127,15 @@ async function connectToWhatsApp() {
                 await sock.presenceSubscribe(sender);
                 await sock.sendPresenceUpdate('composing', sender);
                 const response = await fetch(URL_CPANEL_WEBHOOK, {
-                    method: 'POST',
-                    body: JSON.stringify(payload),
-                    headers: { 'Content-Type': 'application/json' }
-                });
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'application/json' }
+    });
 
-                const data = await response.json();
-                
+    const textoCrudo = await response.text();
+    console.log("LO QUE RESPONDIÓ EL CPANEL:", textoCrudo);
+
+    const data = JSON.parse(textoCrudo);
                if (data && data.reply) {
                     // 1. Si la regla trae botones interactivos configurados
                     if (data.buttons && Array.isArray(data.buttons) && data.buttons.length > 0) {
