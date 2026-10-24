@@ -25,7 +25,6 @@ async function connectToWhatsApp() {
         const { connection, lastDisconnect, qr } = update;
 
         if (qr) {
-            // Creamos un enlace web usando una API pública de códigos QR
             const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qr)}`;
             console.log('==================================================');
             console.log('🔗 ABRE ESTE ENLACE EN TU NAVEGADOR PARA ESCANEAR EL QR:');
@@ -44,7 +43,7 @@ async function connectToWhatsApp() {
         }
     });
 
-    // Capturar mensajes entrantes y enviarlos al cPanel con cabeceras anti-403
+    // Capturar mensajes entrantes y enviarlos al cPanel con el Token Secreto
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
         if (type !== 'notify') return;
 
@@ -61,8 +60,7 @@ async function connectToWhatsApp() {
             console.log(`Mensaje recibido de ${sender}: ${messageText}`);
 
             try {
-                // Petición hacia tu cPanel con los headers de navegador para evitar el error 403
-               // Petición hacia tu cPanel con todas las cabeceras de navegación simuladas
+                // Petición hacia tu cPanel con el Token Secreto y Headers de navegador
                 const phpResponse = await axios.post('https://bdb.solutions360.click/crmsolutions/whatsapp/ia.php', {
                     sender: sender,
                     message: messageText
@@ -72,10 +70,11 @@ async function connectToWhatsApp() {
                         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
                         'Referer': 'https://bdb.solutions360.click/',
                         'Origin': 'https://bdb.solutions360.click',
-                        'Accept': 'application/json, text/plain, */*'
+                        'X-Webhook-Token': 'Coreditec-2014'
                     },
                     timeout: 25000 
                 });
+
                 let respuestaFinal = "";
 
                 if (phpResponse.data) {
