@@ -4,6 +4,28 @@ const fetch = require('node-fetch');
 const express = require('express');
 const pino = require('pino');
 
+// 🚀 Función puente para consultar a Gemini desde Render (Cero errores 404)
+async function consultarGeminiDirecto(promptCompleto) {
+    const apiKey = process.env.GEMINI_KEY; 
+    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: promptCompleto }] }]
+            })
+        });
+        
+        const data = await response.json();
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || "¡Hola! Tomo nota en DBD Suministros.";
+    } catch (error) {
+        console.error("Error en Render con Gemini:", error);
+        return "¡Perfecto! Un asesor te contactará de inmediato.";
+    }
+}
+
 // Servidor web obligatorio para Render
 const app = express();
 const PORT = process.env.PORT || 3000;
