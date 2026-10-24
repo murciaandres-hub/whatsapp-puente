@@ -8,7 +8,6 @@ const pino = require('pino');
 async function consultarGeminiDirecto(promptCompleto) {
     const apiKey = process.env.GEMINI_KEY; 
     
-    // Validar si la llave existe en Render
     if (!apiKey) {
         console.error("❌ ERROR CRÍTICO: La variable GEMINI_KEY no está configurada en Render.");
         return null;
@@ -27,7 +26,6 @@ async function consultarGeminiDirecto(promptCompleto) {
         
         const data = await response.json();
         
-        // Si Google devuelve un error, lo imprimimos completo en la consola de Render
         if (data.error) {
             console.error("❌ ERROR DEVUELTO POR GOOGLE:", JSON.stringify(data.error));
             return null;
@@ -38,7 +36,6 @@ async function consultarGeminiDirecto(promptCompleto) {
         console.error("❌ ERROR DE RED EN FETCH CON GEMINI:", error);
         return null;
     }
-}
 }
 
 // Servidor web obligatorio para Render
@@ -144,15 +141,12 @@ async function connectToWhatsApp() {
                 await sock.presenceSubscribe(sender);
                 await sock.sendPresenceUpdate('composing', sender);
 
-                // 1. Primero intentamos consultar a Gemini directamente desde la nube limpia de Render
                 let respuestaIA = await consultarGeminiDirecto(messageBody);
-
-                // 2. Si Gemini respondió con éxito, armamos la respuesta para enviarla
                 let textoFinalRespuesta = "";
+
                 if (respuestaIA) {
                     textoFinalRespuesta = respuestaIA;
                 } else {
-                    // Si por algo falló la nube, consultamos al cPanel como respaldo secundario
                     const payload = {
                         sender: numeroLimpio, 
                         message: messageBody,
@@ -170,7 +164,6 @@ async function connectToWhatsApp() {
                     textoFinalRespuesta = data.reply || "¡Hola! Tomo nota en DBD Suministros.";
                 }
 
-                // Enviamos el mensaje final a WhatsApp
                 await sock.sendMessage(sender, { text: textoFinalRespuesta });
                 console.log(`Respuesta enviada con éxito: ${textoFinalRespuesta}`);
 
