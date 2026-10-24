@@ -62,7 +62,7 @@ async function connectToWhatsApp() {
 
             try {
                 // 🚀 REEMPLAZA AQUÍ CON LA URL REAL DE TU cPanel
-                const phpResponse = await axios.post('https://tu-dominio-cpanel.com/ia.php', {
+                const phpResponse = await axios.post('https://bdb.solutions360.click/crmsolutions/whatsapp/ia.php', {
                     sender: sender,
                     message: messageText
                 }, { timeout: 25000 });
