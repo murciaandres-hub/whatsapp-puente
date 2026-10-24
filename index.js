@@ -13,38 +13,32 @@ async function consultarGeminiDirecto(promptCompleto) {
         return null;
     }
 
-    const url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+    // Usando la ruta oficial estándar de la API v1beta con el parámetro de llave limpio
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
     
-    const promptConRol = `Eres el asistente virtual experto de ventas de DBD Suministros. Atiende de forma amable y comercial a los clientes sobre computadores y portátiles. 
-    
-Mensaje del cliente: ${promptCompleto}`;
-
     try {
         const response = await fetch(url, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                model: "gemini-1.5-flash",
-                messages: [
-                    { role: "system", content: "Eres el asistente virtual de DBD Suministros." },
-                    { role: "user", content: promptConRol }
-                ],
-                temperature: 0.7
+                contents: [
+                    {
+                        parts: [
+                            { text: "Eres el asistente virtual experto de ventas de DBD Suministros. Atiende de forma amable y comercial a los clientes sobre computadores y portátiles de alta gama. Mensaje del cliente: " + promptCompleto }
+                        ]
+                    }
+                ]
             })
         });
         
         const data = await response.json();
-        console.log("🔍 RESPUESTA CRUDA DE OPENAI/GOOGLE:", JSON.stringify(data));
         
         if (data.error) {
             console.error("❌ ERROR DEVUELTO POR GOOGLE:", JSON.stringify(data.error));
             return null;
         }
 
-        const textoGenerado = data.choices?.[0]?.message?.content;
+        const textoGenerado = data.candidates?.[0]?.content?.parts?.[0]?.text;
         return textoGenerado ? textoGenerado.trim() : null;
 
     } catch (error) {
@@ -52,7 +46,6 @@ Mensaje del cliente: ${promptCompleto}`;
         return null;
     }
 }
-
 // Servidor web obligatorio para Render
 const app = express();
 const PORT = process.env.PORT || 3000;
