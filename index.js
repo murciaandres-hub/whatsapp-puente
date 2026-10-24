@@ -54,7 +54,7 @@ function consultarIAPropia(numeroCliente, mensajeCliente) {
             memoriaConversacion[numeroCliente].ultimoTema = 'general';
             respuesta = "¡Entendido! Tenemos modelos excelentes en stock para entrega inmediata. ¿Te gustarìa que un asesor te contacte con los detalles técnicos completos de estos equipos?";
         } else {
-            respuesta = "¡Entendido! Tomo nota detallada de tu solicitud en DBD Suministros para gestionarla con el departamento técnico de inmediato. ¿Hay algún componente específico (como RAM, SSD o tarjeta gráfica) que quieras agregar?";
+            //respuesta = "¡Entendido! Tomo nota detallada de tu solicitud en DBD Suministros para gestionarla con el departamento técnico de inmediato. ¿Hay algún componente específico (como RAM, SSD o tarjeta gráfica) que quieras agregar?";
         }
     }
 
