@@ -4,6 +4,7 @@ const fetch = require('node-fetch');
 const express = require('express');
 const pino = require('pino');
 
+// 🚀 Función puente definitiva usando el endpoint universal de IA Studio
 async function consultarGeminiDirecto(promptCompleto) {
     const apiKey = process.env.GEMINI_KEY; 
     
@@ -12,8 +13,7 @@ async function consultarGeminiDirecto(promptCompleto) {
         return null;
     }
 
-    // Usando el endpoint universal de contenido para llaves de AI Studio
-    const url = `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`;
+    const url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
     
     const promptConRol = `Eres el asistente virtual experto de ventas de DBD Suministros. Atiende de forma amable y comercial a los clientes sobre computadores y portátiles. 
     
@@ -51,15 +51,8 @@ Mensaje del cliente: ${promptCompleto}`;
         return null;
     }
 }
-        // Extraemos el texto limpio que genera la IA
-        const textoGenerado = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        return textoGenerado ? textoGenerado.trim() : null;
 
-    } catch (error) {
-        console.error("❌ ERROR DE RED EN FETCH CON GEMINI:", error);
-        return null;
-    }
-}// Servidor web obligatorio para Render
+// Servidor web obligatorio para Render
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -74,7 +67,7 @@ app.listen(PORT, () => {
 const URL_CPANEL_WEBHOOK = process.env.URL_CPANEL_WEBHOOK || 'https://bdb.solutions360.click/crmsolutions/whatsapp/ia.php';
 const contactoCache = {};
 const chatsPausados = {};
-const TIEMPO_PAUSA = 10 * 60 * 1000; // 10 minutos de pausa
+const TIEMPO_PAUSA = 10 * 60 * 1000;
 
 async function connectToWhatsApp() {
     const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
