@@ -62,17 +62,20 @@ async function connectToWhatsApp() {
 
             try {
                 // Petición hacia tu cPanel con los headers de navegador para evitar el error 403
+               // Petición hacia tu cPanel con todas las cabeceras de navegación simuladas
                 const phpResponse = await axios.post('https://bdb.solutions360.click/crmsolutions/whatsapp/ia.php', {
                     sender: sender,
                     message: messageText
                 }, {
                     headers: {
                         'Content-Type': 'application/json',
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                        'Referer': 'https://bdb.solutions360.click/',
+                        'Origin': 'https://bdb.solutions360.click',
+                        'Accept': 'application/json, text/plain, */*'
                     },
                     timeout: 25000 
                 });
-
                 let respuestaFinal = "";
 
                 if (phpResponse.data) {
