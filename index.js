@@ -15,14 +15,24 @@ async function connectToWhatsApp() {
     
     sock = makeWASocket({
         auth: state,
-        logger: pino({ level: 'silent' }),
-        printQRInTerminal: true // Volvemos al método anterior de la terminal
+        logger: pino({ level: 'silent' })
+        // Nota: Eliminamos printQRInTerminal porque ya no existe en Baileys moderno
     });
 
     sock.ev.on('creds.update', saveCreds);
 
+    // ATAR EL EVENTO DE CONEXIÓN Y CAPTURAR EL QR CORRECTAMENTE
     sock.ev.on('connection.update', (update) => {
-        const { connection, lastDisconnect } = update;
+        const { connection, lastDisconnect, qr } = update;
+
+        // Si Baileys emite un código QR, lo imprimimos en texto o aviso en la consola de Render
+        if (qr) {
+            console.log('--- NUEVO CÓDIGO QR GENERADO ---');
+            console.log('Escanea el código QR que aparece abajo o usa un visor compatible:');
+            // Imprimimos el texto crudo del QR por si acaso
+            console.log(qr);
+        }
+
         if (connection === 'close') {
             const shouldReconnect = (lastDisconnect?.error instanceof Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
             console.log('Conexión cerrada. Reconectando...', shouldReconnect);
@@ -34,7 +44,7 @@ async function connectToWhatsApp() {
         }
     });
 
-    // Capturar mensajes entrantes y enviarlos a tu cPanel
+    // Capturar mensajes entrantes y enviarlos al cPanel
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
         if (type !== 'notify') return;
 
@@ -51,7 +61,7 @@ async function connectToWhatsApp() {
             console.log(`Mensaje recibido de ${sender}: ${messageText}`);
 
             try {
-                // 🚀 PETICIÓN AL cPanel (Recuerda poner tu URL real aquí)
+                // 🚀 REEMPLAZA AQUÍ CON LA URL REAL DE TU cPanel
                 const phpResponse = await axios.post('https://tu-dominio-cpanel.com/ia.php', {
                     sender: sender,
                     message: messageText
