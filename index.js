@@ -1,3 +1,21 @@
+const axios = require('axios');
+
+// ... dentro de tu función cuando recibes el mensaje de WhatsApp:
+try {
+    const response = await axios.post('https://bdb.solutions360.click/crmsolutions/whatsapp/ia.php', {
+        sender: remoteJid,
+        message: mensajeRecibido
+    }, {
+        headers: {
+            'Content-Type': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+    });
+
+    console.log("Respuesta del cPanel:", response.data);
+} catch (error) {
+    console.error("Error al conectar con el cPanel:", error.message);
+}
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 const { Boom } = require('@hapi/boom');
 const express = require('express');
