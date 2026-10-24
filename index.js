@@ -7,6 +7,13 @@ const pino = require('pino');
 // 🚀 Función puente para consultar a Gemini desde Render (Cero errores 404)
 async function consultarGeminiDirecto(promptCompleto) {
     const apiKey = process.env.GEMINI_KEY; 
+    
+    // Validar si la llave existe en Render
+    if (!apiKey) {
+        console.error("❌ ERROR CRÍTICO: La variable GEMINI_KEY no está configurada en Render.");
+        return null;
+    }
+
     const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
     
     try {
@@ -19,11 +26,19 @@ async function consultarGeminiDirecto(promptCompleto) {
         });
         
         const data = await response.json();
+        
+        // Si Google devuelve un error, lo imprimimos completo en la consola de Render
+        if (data.error) {
+            console.error("❌ ERROR DEVUELTO POR GOOGLE:", JSON.stringify(data.error));
+            return null;
+        }
+
         return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
     } catch (error) {
-        console.error("Error en Render con Gemini:", error);
+        console.error("❌ ERROR DE RED EN FETCH CON GEMINI:", error);
         return null;
     }
+}
 }
 
 // Servidor web obligatorio para Render
