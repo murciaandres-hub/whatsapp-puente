@@ -17,32 +17,42 @@ function consultarIAPropia(numeroCliente, mensajeCliente) {
     
     let respuesta = "";
 
-    // Lógica de Inteligencia Artificial basada en intenciones y base de conocimientos
-    if (texto.includes('hola') || texto.includes('buenos') || texto.includes('buenas') || texto.includes('hi')) {
-        memoriaConversacion[numeroCliente].saludoInicial = true;
+    // 1. Saludos
+    if (texto.includes('hola') || texto.includes('buenos') || texto.includes('buenas') || texto.includes('hi') || texto.includes('que tal')) {
+        memoriaConversacion[numeroCliente].ultimoTema = 'general';
         respuesta = "¡Hola! 👋 Bienvenido a **DBD Suministros**. Somos especialistas en tecnología de alto rendimiento, estaciones de trabajo y computadores de alta gama. ¿Qué equipo o componente estás buscando hoy?";
     } 
-    else if (texto.includes('portatil') || texto.includes('laptop') || texto.includes('portátiles')) {
-        memoriaConversacion[numeroCliente].ultimoTema = 'portatiles';
-        respuesta = "💻 Contamos con portátiles corporativos y profesionales de alto rendimiento. Tenemos marcas como Lenovo ThinkPad, Dell Latitude y ASUS ROG para gaming. ¿Buscas un equipo para oficina, diseño gráfico o juegos?";
-    } 
-    else if (texto.includes('estacion') || texto.includes('trabajo') || texto.includes('workstation')) {
-        memoriaConversacion[numeroCliente].ultimoTema = 'workstations';
-        respuesta = "🖥️ Nuestras Estaciones de Trabajo están armadas con procesadores Intel Xeon o AMD Ryzen Threadripper y tarjetas gráficas NVIDIA RTX profesionales, ideales para render, arquitectura y simulaciones pesadas. ¿Cuál es tu presupuesto aproximado?";
-    } 
-    else if (texto.includes('precio') || texto.includes('cuanto vale') || texto.includes('cotizacion') || texto.includes('catalogo')) {
-        respuesta = "📋 Los precios varían según la configuración exacta de RAM, almacenamiento SSD y tarjeta gráfica. Para enviarte el catálogo oficial detallado con modelos y precios, dime por favor qué uso principal le darás al equipo.";
-    } 
-    else if (texto.includes('direccion') || texto.includes('ubicacion') || texto.includes('donde estan') || texto.includes('local')) {
+    // 2. Ubicación / Dirección / Horarios
+    else if (texto.includes('direccion') || texto.includes('ubicacion') || texto.includes('donde') || texto.includes('local') || texto.includes('horario') || texto.includes('calle')) {
+        memoriaConversacion[numeroCliente].ultimoTema = 'ubicacion';
         respuesta = "📍 Nos encuentras en el **Centro empresarial Tecno 77**, Calle 77 # 15 - 17, Local 102 o 105. Nuestro horario de atención es de Lunes a Sábado de 9:00 AM a 7:00 PM. ¡Será un gusto atenderte!";
+    }
+    // 3. Portátiles
+    else if (texto.includes('portatil') || texto.includes('laptop') || texto.includes('portátiles') || texto.includes('transporte')) {
+        memoriaConversacion[numeroCliente].ultimoTema = 'portatiles';
+        respuesta = "💻 Contamos con portátiles corporativos y profesionales de alto rendimiento. Tenemos opciones con tarjeta gráfica dedicada para diseño o versiones más ligeras para transporte. ¿Cuál prefieres?";
     } 
+    // 4. Estaciones de trabajo
+    else if (texto.includes('estacion') || texto.includes('trabajo') || texto.includes('workstation') || texto.includes('render')) {
+        memoriaConversacion[numeroCliente].ultimoTema = 'workstations';
+        respuesta = "🖥️ Nuestras Estaciones de Trabajo vienen con procesadores potentes y tarjetas NVIDIA RTX profesionales. ¿Qué presupuesto manejas aproximadamente?";
+    } 
+    // 5. Precios / Catálogo
+    else if (texto.includes('precio') || texto.includes('cuanto') || texto.includes('cotizacion') || texto.includes('catalogo') || texto.includes('lista')) {
+        memoriaConversacion[numeroCliente].ultimoTema = 'precios';
+        respuesta = "📋 Para enviarte el catálogo oficial detallado con modelos y precios exactos, dime por favor si buscas un portátil o una estación de trabajo de escritorio.";
+    } 
+    // 6. Respuestas neutrales o salidas del bucle
+    else if (texto.includes('ninguno') || texto.includes('otro') || texto.includes('nada') || texto.includes('gracias')) {
+        memoriaConversacion[numeroCliente].ultimoTema = 'general';
+        respuesta = "¡Perfecto! Quedamos a tu disposición. Si necesitas cotizar algún otro equipo, componente o accesorio en DBD Suministros, solo dime.";
+    }
     else {
-        // Si no encaja exactamente, usamos la memoria del último tema o respondemos inteligentemente
+        // Si no hay una palabra clave exacta, respondemos de forma abierta según el contexto sin trabarnos
         const temaPrevio = memoriaConversacion[numeroCliente].ultimoTema;
         if (temaPrevio === 'portatiles') {
-            respuesta = "Entiendo perfectamente sobre los portátiles. ¿Te gustaría que te recomiende un modelo con tarjeta gráfica dedicada o prefieres uno más ligero para transporte?";
-        } else if (temaPrevio === 'workstations') {
-            respuesta = "Perfecto para las estaciones de trabajo. ¿Trabajas con algún software en específico como AutoCAD, Blender, Premiere o Revit para afinar la cotización?";
+            memoriaConversacion[numeroCliente].ultimoTema = 'general';
+            respuesta = "¡Entendido! Tenemos modelos excelentes en stock para entrega inmediata. ¿Te gustarìa que un asesor te contacte con los detalles técnicos completos de estos equipos?";
         } else {
             respuesta = "¡Entendido! Tomo nota detallada de tu solicitud en DBD Suministros para gestionarla con el departamento técnico de inmediato. ¿Hay algún componente específico (como RAM, SSD o tarjeta gráfica) que quieras agregar?";
         }
@@ -50,7 +60,6 @@ function consultarIAPropia(numeroCliente, mensajeCliente) {
 
     return respuesta;
 }
-
 // Servidor web obligatorio para Render
 const app = express();
 const PORT = process.env.PORT || 3000;
