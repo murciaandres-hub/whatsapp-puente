@@ -19,10 +19,10 @@ async function consultarGeminiDirecto(promptCompleto) {
         });
         
         const data = await response.json();
-        return data.candidates?.[0]?.content?.parts?.[0]?.text || "¡Hola! Tomo nota en DBD Suministros.";
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
     } catch (error) {
         console.error("Error en Render con Gemini:", error);
-        return "¡Perfecto! Un asesor te contactará de inmediato.";
+        return null;
     }
 }
 
@@ -39,12 +39,9 @@ app.listen(PORT, () => {
 });
 
 const URL_CPANEL_WEBHOOK = process.env.URL_CPANEL_WEBHOOK || 'https://bdb.solutions360.click/crmsolutions/whatsapp/ia.php';
-// Memoria caché local segura para relacionar LIDs con números reales
 const contactoCache = {};
-
-// Memoria para llevar el control de chats pausados por intervención humana
 const chatsPausados = {};
-const TIEMPO_PAUSA = 10 * 60 * 1000; // 10 minutos de pausa cuando tú escribes
+const TIEMPO_PAUSA = 10 * 60 * 1000; // 10 minutos de pausa
 
 async function connectToWhatsApp() {
     const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
@@ -82,35 +79,27 @@ async function connectToWhatsApp() {
 
             const sender = msg.key.remoteJid;
 
-            // SI TÚ ESCRIBES (fromMe): Pausamos el bot para este chat y no procesamos nada
             if (msg.key.fromMe) {
                 chatsPausados[sender] = Date.now() + TIEMPO_PAUSA;
                 console.log(`[HUMANO INTERVINO] Pausando el bot para ${sender} durante 10 minutos.`);
                 continue;
             }
 
-            // Validar si el chat está actualmente pausado por intervención humana reciente
             if (chatsPausados[sender] && Date.now() < chatsPausados[sender]) {
-                console.log(`[BOT EN PAUSA] Mensaje ignorado para ${sender} porque hay un humano atendiendo.`);
                 continue;
             } else if (chatsPausados[sender]) {
-                // Si ya pasó el tiempo, borramos la pausa
                 delete chatsPausados[sender];
             }
 
             const messageBody = msg.message.conversation || msg.message.extendedTextMessage?.text;
-
             if (!messageBody) continue;
 
             let numeroLimpio = sender;
-
-            // Extracción segura usando caché local y metadatos
             if (sender.includes('@lid')) {
                 if (contactoCache[sender]) {
                     numeroLimpio = contactoCache[sender];
                 } else {
                     let jidReal = msg.key.participant || msg.participant || null;
-                    
                     if (jidReal && jidReal.includes('@s.whatsapp.net')) {
                         numeroLimpio = jidReal.split('@')[0];
                         contactoCache[sender] = numeroLimpio;
@@ -123,10 +112,7 @@ async function connectToWhatsApp() {
                                     contactoCache[sender] = numeroLimpio;
                                 }
                             }
-                        } catch (e) {
-                            // Ignorar error si no hay mapeo en frío
-                        }
-
+                        } catch (e) {}
                         if (numeroLimpio.includes('@lid')) {
                             numeroLimpio = "LID_" + sender.replace(/[^0-9]/g, '');
                         }
@@ -139,73 +125,43 @@ async function connectToWhatsApp() {
 
             console.log(`Mensaje recibido de ${sender} (Número resuelto: ${numeroLimpio}): ${messageBody}`);
 
-            const payload = {
-                sender: numeroLimpio, 
-                message: messageBody,
-                sender_original: sender
-            };
-
             try {
                 await sock.presenceSubscribe(sender);
                 await sock.sendPresenceUpdate('composing', sender);
-                const response = await fetch(URL_CPANEL_WEBHOOK, {
-        method: 'POST',
-        body: JSON.stringify(payload),
-        headers: { 'Content-Type': 'application/json' }
-    });
 
-    const textoCrudo = await response.text();
-    console.log("LO QUE RESPONDIÓ EL CPANEL:", textoCrudo);
+                // 1. Primero intentamos consultar a Gemini directamente desde la nube limpia de Render
+                let respuestaIA = await consultarGeminiDirecto(messageBody);
 
-    const data = JSON.parse(textoCrudo);
-               if (data && data.reply) {
-                    // 1. Si la regla trae botones interactivos configurados
-                    if (data.buttons && Array.isArray(data.buttons) && data.buttons.length > 0) {
-                        console.log("¡Botones detectados! Enviando mensaje interactivo con botones:", data.buttons);
-                        
-                        // Mapeamos los textos al formato que exige Baileys
-                        const buttonsList = data.buttons.map((btnText, index) => ({
-                            buttonId: `btn_${index}_${Date.now()}`,
-                            buttonText: { displayText: btnText },
-                            type: 1
-                        }));
+                // 2. Si Gemini respondió con éxito, armamos la respuesta para enviarla
+                let textoFinalRespuesta = "";
+                if (respuestaIA) {
+                    textoFinalRespuesta = respuestaIA;
+                } else {
+                    // Si por algo falló la nube, consultamos al cPanel como respaldo secundario
+                    const payload = {
+                        sender: numeroLimpio, 
+                        message: messageBody,
+                        sender_original: sender
+                    };
 
-                        const buttonMessage = {
-                            text: data.reply,
-                            footer: "Solutions Clicks",
-                            buttons: buttonsList,
-                            headerType: 1
-                        };
+                    const response = await fetch(URL_CPANEL_WEBHOOK, {
+                        method: 'POST',
+                        body: JSON.stringify(payload),
+                        headers: { 'Content-Type': 'application/json' }
+                    });
 
-                        await sock.sendMessage(sender, buttonMessage);
-                        console.log("¡Mensaje con botones interactivos enviado con éxito!");
-                    } 
-                    // 2. Si trae imagen adjunta
-                    else if (data.imagenUrl && typeof data.imagenUrl === 'string' && data.imagenUrl.trim() !== '') {
-                        console.log("¡SÍ HAY IMAGEN DETECTADA! Descargando y enviando:", data.imagenUrl.trim());
-                        
-                        try {
-                            const imgResponse = await fetch(data.imagenUrl.trim());
-                            const buffer = await imgResponse.buffer();
-
-                            await sock.sendMessage(sender, { 
-                                image: buffer, 
-                                caption: data.reply 
-                            });
-                            console.log("¡Imagen enviada como buffer exitosamente!");
-                        } catch (imgError) {
-                            console.error("Error al descargar/enviar la imagen, enviando solo texto:", imgError);
-                            await sock.sendMessage(sender, { text: data.reply + "\n\n(No se pudo cargar la imagen adjunta)" });
-                        }
-                    } 
-                    // 3. Envío de texto normal
-                    else {
-                        await sock.sendMessage(sender, { text: data.reply });
-                        console.log(`Respuesta de texto enviada: ${data.reply}`);
-                    }
+                    const textoCrudo = await response.text();
+                    const data = JSON.parse(textoCrudo);
+                    textoFinalRespuesta = data.reply || "¡Hola! Tomo nota en DBD Suministros.";
                 }
+
+                // Enviamos el mensaje final a WhatsApp
+                await sock.sendMessage(sender, { text: textoFinalRespuesta });
+                console.log(`Respuesta enviada con éxito: ${textoFinalRespuesta}`);
+
             } catch (error) {
-                console.error('Error al conectar con el cPanel:', error);
+                console.error('Error procesando el mensaje:', error);
+                await sock.sendMessage(sender, { text: "¡Hola! Un asesor de DBD Suministros te contactará de inmediato." });
             }
         }
     });
