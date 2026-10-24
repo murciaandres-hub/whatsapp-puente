@@ -37,6 +37,7 @@ Mensaje del cliente: ${promptCompleto}`;
         });
         
         const data = await response.json();
+        console.log("🔍 RESPUESTA CRUDA DE OPENAI/GOOGLE:", JSON.stringify(data));
         
         if (data.error) {
             console.error("❌ ERROR DEVUELTO POR GOOGLE:", JSON.stringify(data.error));
