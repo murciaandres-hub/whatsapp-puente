@@ -3,7 +3,6 @@ const { Boom } = require('@hapi/boom');
 const express = require('express');
 const axios = require('axios');
 const pino = require('pino');
-const qrcode = require('qrcode-terminal');
 
 const app = express();
 app.use(express.json());
@@ -16,20 +15,14 @@ async function connectToWhatsApp() {
     
     sock = makeWASocket({
         auth: state,
-        logger: pino({ level: 'silent' })
+        logger: pino({ level: 'silent' }),
+        printQRInTerminal: true // Volvemos al método anterior de la terminal
     });
 
     sock.ev.on('creds.update', saveCreds);
 
-    // Evento de conexión y generación del código QR en la consola de Render
     sock.ev.on('connection.update', (update) => {
-        const { connection, lastDisconnect, qr } = update;
-
-        if (qr) {
-            console.log('¡Escanea este código QR con tu WhatsApp!');
-            qrcode.generate(qr, { small: true });
-        }
-
+        const { connection, lastDisconnect } = update;
         if (connection === 'close') {
             const shouldReconnect = (lastDisconnect?.error instanceof Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
             console.log('Conexión cerrada. Reconectando...', shouldReconnect);
@@ -41,7 +34,7 @@ async function connectToWhatsApp() {
         }
     });
 
-    // Capturar mensajes entrantes de WhatsApp
+    // Capturar mensajes entrantes y enviarlos a tu cPanel
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
         if (type !== 'notify') return;
 
@@ -58,8 +51,7 @@ async function connectToWhatsApp() {
             console.log(`Mensaje recibido de ${sender}: ${messageText}`);
 
             try {
-                // 🚀 PETICIÓN DIRECTA AL cPanel (Tu archivo ia.php)
-                // REEMPLAZA "https://tu-dominio-cpanel.com/ia.php" POR LA URL REAL DE TU ARCHIVO
+                // 🚀 PETICIÓN AL cPanel (Recuerda poner tu URL real aquí)
                 const phpResponse = await axios.post('https://tu-dominio-cpanel.com/ia.php', {
                     sender: sender,
                     message: messageText
@@ -67,7 +59,6 @@ async function connectToWhatsApp() {
 
                 let respuestaFinal = "";
 
-                // Extraer estrictamente la respuesta que manda tu cPanel
                 if (phpResponse.data) {
                     if (typeof phpResponse.data === 'string') {
                         respuestaFinal = phpResponse.data;
@@ -76,14 +67,10 @@ async function connectToWhatsApp() {
                     }
                 }
 
-                // Si por alguna razón el cPanel viniera vacío
                 if (!respuestaFinal || respuestaFinal.trim() === "") {
                     respuestaFinal = "¡Hola! Recibimos tu mensaje en DBD Suministros.";
                 }
 
-                console.log(`Respuesta enviada a WhatsApp: ${respuestaFinal}`);
-
-                // Enviar la respuesta de vuelta al chat
                 await sock.sendMessage(sender, { text: respuestaFinal });
 
             } catch (error) {
@@ -94,7 +81,6 @@ async function connectToWhatsApp() {
     });
 }
 
-// Servidor web express para mantener vivo el servicio en Render
 app.get('/', (req, res) => {
     res.send('Puente de WhatsApp activo para DBD Suministros');
 });
