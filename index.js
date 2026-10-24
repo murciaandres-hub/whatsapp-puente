@@ -16,21 +16,21 @@ async function connectToWhatsApp() {
     sock = makeWASocket({
         auth: state,
         logger: pino({ level: 'silent' })
-        // Nota: Eliminamos printQRInTerminal porque ya no existe en Baileys moderno
     });
 
     sock.ev.on('creds.update', saveCreds);
 
-    // ATAR EL EVENTO DE CONEXIÓN Y CAPTURAR EL QR CORRECTAMENTE
+    // GENERAR UN ENLACE WEB LIMPIO PARA EL CÓDIGO QR
     sock.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect, qr } = update;
 
-        // Si Baileys emite un código QR, lo imprimimos en texto o aviso en la consola de Render
         if (qr) {
-            console.log('--- NUEVO CÓDIGO QR GENERADO ---');
-            console.log('Escanea el código QR que aparece abajo o usa un visor compatible:');
-            // Imprimimos el texto crudo del QR por si acaso
-            console.log(qr);
+            // Creamos un enlace web usando una API pública de códigos QR
+            const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qr)}`;
+            console.log('==================================================');
+            console.log('🔗 ABRE ESTE ENLACE EN TU NAVEGADOR PARA ESCANEAR EL QR:');
+            console.log(qrImageUrl);
+            console.log('==================================================');
         }
 
         if (connection === 'close') {
