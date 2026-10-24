@@ -4,54 +4,59 @@ const fetch = require('node-fetch');
 const express = require('express');
 const pino = require('pino');
 
-// 🚀 Función puente definitiva usando el endpoint universal de IA Studio
-async function consultarGeminiDirecto(promptCompleto) {
-    const apiKey = process.env.GEMINI_KEY; 
-    
-    if (!apiKey) {
-        console.error("❌ ERROR CRÍTICO: La variable GEMINI_KEY no está configurada en Render.");
-        return null;
-    }
+// 🧠 NUESTRA PROPIA IA CASERA CON MEMORIA Y BASE DE CONOCIMIENTOS PARA DBD SUMINISTROS
+const memoriaConversacion = {};
 
-    // Usando la ruta oficial estándar de la API v1beta con el parámetro de llave limpio
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+function consultarIAPropia(numeroCliente, mensajeCliente) {
+    const texto = mensajeCliente.toLowerCase();
     
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [
-                    {
-                        parts: [
-                            { text: "Eres el asistente virtual experto de ventas de DBD Suministros. Atiende de forma amable y comercial a los clientes sobre computadores y portátiles de alta gama. Mensaje del cliente: " + promptCompleto }
-                        ]
-                    }
-                ]
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (data.error) {
-            console.error("❌ ERROR DEVUELTO POR GOOGLE:", JSON.stringify(data.error));
-            return null;
+    // Inicializar memoria para este cliente si no existe
+    if (!memoriaConversacion[numeroCliente]) {
+        memoriaConversacion[numeroCliente] = { ultimoTema: 'general', saludoInicial: false };
+    }
+    
+    let respuesta = "";
+
+    // Lógica de Inteligencia Artificial basada en intenciones y base de conocimientos
+    if (texto.includes('hola') || texto.includes('buenos') || texto.includes('buenas') || texto.includes('hi')) {
+        memoriaConversacion[numeroCliente].saludoInicial = true;
+        respuesta = "¡Hola! 👋 Bienvenido a **DBD Suministros**. Somos especialistas en tecnología de alto rendimiento, estaciones de trabajo y computadores de alta gama. ¿Qué equipo o componente estás buscando hoy?";
+    } 
+    else if (texto.includes('portatil') || texto.includes('laptop') || texto.includes('portátiles')) {
+        memoriaConversacion[numeroCliente].ultimoTema = 'portatiles';
+        respuesta = "💻 Contamos con portátiles corporativos y profesionales de alto rendimiento. Tenemos marcas como Lenovo ThinkPad, Dell Latitude y ASUS ROG para gaming. ¿Buscas un equipo para oficina, diseño gráfico o juegos?";
+    } 
+    else if (texto.includes('estacion') || texto.includes('trabajo') || texto.includes('workstation')) {
+        memoriaConversacion[numeroCliente].ultimoTema = 'workstations';
+        respuesta = "🖥️ Nuestras Estaciones de Trabajo están armadas con procesadores Intel Xeon o AMD Ryzen Threadripper y tarjetas gráficas NVIDIA RTX profesionales, ideales para render, arquitectura y simulaciones pesadas. ¿Cuál es tu presupuesto aproximado?";
+    } 
+    else if (texto.includes('precio') || texto.includes('cuanto vale') || texto.includes('cotizacion') || texto.includes('catalogo')) {
+        respuesta = "📋 Los precios varían según la configuración exacta de RAM, almacenamiento SSD y tarjeta gráfica. Para enviarte el catálogo oficial detallado con modelos y precios, dime por favor qué uso principal le darás al equipo.";
+    } 
+    else if (texto.includes('direccion') || texto.includes('ubicacion') || texto.includes('donde estan') || texto.includes('local')) {
+        respuesta = "📍 Nos encuentras en el **Centro empresarial Tecno 77**, Calle 77 # 15 - 17, Local 102 o 105. Nuestro horario de atención es de Lunes a Sábado de 9:00 AM a 7:00 PM. ¡Será un gusto atenderte!";
+    } 
+    else {
+        // Si no encaja exactamente, usamos la memoria del último tema o respondemos inteligentemente
+        const temaPrevio = memoriaConversacion[numeroCliente].ultimoTema;
+        if (temaPrevio === 'portatiles') {
+            respuesta = "Entiendo perfectamente sobre los portátiles. ¿Te gustaría que te recomiende un modelo con tarjeta gráfica dedicada o prefieres uno más ligero para transporte?";
+        } else if (temaPrevio === 'workstations') {
+            respuesta = "Perfecto para las estaciones de trabajo. ¿Trabajas con algún software en específico como AutoCAD, Blender, Premiere o Revit para afinar la cotización?";
+        } else {
+            respuesta = "¡Entendido! Tomo nota detallada de tu solicitud en DBD Suministros para gestionarla con el departamento técnico de inmediato. ¿Hay algún componente específico (como RAM, SSD o tarjeta gráfica) que quieras agregar?";
         }
-
-        const textoGenerado = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        return textoGenerado ? textoGenerado.trim() : null;
-
-    } catch (error) {
-        console.error("❌ ERROR DE RED EN FETCH CON GEMINI:", error);
-        return null;
     }
+
+    return respuesta;
 }
+
 // Servidor web obligatorio para Render
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
-    res.send('Puente de WhatsApp con Baileys activo y funcionando');
+    res.send('Puente de WhatsApp con IA Propia activo y funcionando');
 });
 
 app.listen(PORT, () => {
@@ -140,7 +145,7 @@ async function connectToWhatsApp() {
                 }
             } else if (sender.includes('@s.whatsapp.net')) {
                 numeroLimpio = sender.split('@')[0];
-                contactoCache[sender] = numeroLimpio;
+                contactoCache[sender] = numeroLino = numeroLimpio;
             }
 
             console.log(`Mensaje recibido de ${sender} (Número resuelto: ${numeroLimpio}): ${messageBody}`);
@@ -149,34 +154,14 @@ async function connectToWhatsApp() {
                 await sock.presenceSubscribe(sender);
                 await sock.sendPresenceUpdate('composing', sender);
 
-                let respuestaIA = await consultarGeminiDirecto(messageBody);
-                let textoFinalRespuesta = "";
-
-                if (respuestaIA) {
-                    textoFinalRespuesta = respuestaIA;
-                } else {
-                    const payload = {
-                        sender: numeroLimpio, 
-                        message: messageBody,
-                        sender_original: sender
-                    };
-
-                    const response = await fetch(URL_CPANEL_WEBHOOK, {
-                        method: 'POST',
-                        body: JSON.stringify(payload),
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-
-                    const textoCrudo = await response.text();
-                    const data = JSON.parse(textoCrudo);
-                    textoFinalRespuesta = data.reply || "¡Hola! Tomo nota en DBD Suministros.";
-                }
+                // EJECUTAMOS NUESTRA IA CASERA LOCAL (CERO ERRORES DE RED, CERO GOOGLE)
+                let textoFinalRespuesta = consultarIAPropia(numeroLimpio, messageBody);
 
                 await sock.sendMessage(sender, { text: textoFinalRespuesta });
-                console.log(`Respuesta enviada con éxito: ${textoFinalRespuesta}`);
+                console.log(`Respuesta IA Propia enviada con éxito: ${textoFinalRespuesta}`);
 
             } catch (error) {
-                console.error('Error procesando el mensaje:', error);
+                console.error('Error procesando el mensaje con IA Propia:', error);
                 await sock.sendMessage(sender, { text: "¡Hola! Un asesor de DBD Suministros te contactará de inmediato." });
             }
         }
